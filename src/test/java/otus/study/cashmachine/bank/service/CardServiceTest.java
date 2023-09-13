@@ -3,12 +3,12 @@ package otus.study.cashmachine.bank.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import otus.study.cashmachine.TestUtil;
 import otus.study.cashmachine.bank.dao.CardsDao;
 import otus.study.cashmachine.bank.data.Card;
 import otus.study.cashmachine.bank.service.impl.CardServiceImpl;
 
 import java.math.BigDecimal;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -40,7 +40,7 @@ public class CardServiceTest {
 
     @Test
     void checkBalance() {
-        Card card = new Card(1L, "1234", 1L, "0000");
+        Card card = new Card(1L, "1234", 1L, TestUtil.getHash("0000"));
         when(cardsDao.getCardByNumber(anyString())).thenReturn(card);
         when(accountService.checkBalance(1L)).thenReturn(new BigDecimal(1000));
 
@@ -54,7 +54,7 @@ public class CardServiceTest {
         ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
 
         when(cardsDao.getCardByNumber("1111"))
-                .thenReturn(new Card(1L, "1111", 100L, "0000"));
+                .thenReturn(new Card(1L, "1111", 100L, TestUtil.getHash("0000")));
 
         when(accountService.getMoney(idCaptor.capture(), amountCaptor.capture()))
                 .thenReturn(BigDecimal.TEN);
@@ -68,6 +68,42 @@ public class CardServiceTest {
 
     @Test
     void putMoney() {
+        String pin = "0000";
+
+        Card card = new Card(1L, "1234", 25L, TestUtil.getHash(pin));
+        BigDecimal addedDecimal = BigDecimal.TEN;
+
+        when(cardsDao.getCardByNumber("1111"))
+                .thenReturn(null);
+        when(cardsDao.getCardByNumber("1234"))
+                .thenReturn(card);
+        when(accountService.putMoney(25L, addedDecimal)).thenReturn(addedDecimal);
+
+
+        assertThrows(IllegalArgumentException.class, () ->
+                cardService.putMoney("1111", pin, addedDecimal));
+        assertEquals(addedDecimal,
+                cardService.putMoney("1234", pin, addedDecimal));
+
+    }
+
+    @Test
+    void changePin() {
+        String pin = "0000";
+        String newPin = "0001";
+
+        Card card = new Card(1L, "1234", 25L, TestUtil.getHash(pin));
+
+        when(cardsDao.getCardByNumber("1111"))
+                .thenReturn(null);
+        when(cardsDao.getCardByNumber("1234"))
+                .thenReturn(card);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                cardService.cnangePin("1111", pin, newPin));
+        assertTrue(cardService.cnangePin("1234", pin, newPin));
+        assertFalse(cardService.cnangePin("1234", pin, newPin));
+
     }
 
     @Test
